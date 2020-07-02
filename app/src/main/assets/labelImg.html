@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <script src="https://cdn.bootcss.com/fabric.js/2.1.0/fabric.min.js"></script>
+  <style>
+    *{
+      padding: 0;
+      margin: 0;
+    }
+    html,body {
+      width: 100%;
+      height: 100%;
+
+    }
+    #wrap {
+      height: 70%;
+      width: 100%;
+      background-color: pink;
+    }
+    #btns {
+      margin-top: 20px;
+    }
+    #btns button{
+      padding: 5px 10px;
+      font-size: 16px;
+      margin-right: 20px;
+    }
+
+  </style>
+</head>
+<body>
+
+<div id="wrap">
+  <canvas id="myCanvas"></canvas>
+</div>
+<div id="btns">
+  <button onclick="draw('text')">文字</button>
+  <button onclick="draw('path')">画笔</button>
+  <button onclick="draw('rect')">方框</button>
+  <button onclick="select()">选择</button>
+</div>
+
+<script>
+  var wrap = document.getElementById('wrap')
+  var myCanvas = document.getElementById('myCanvas')
+
+  var canvas = new fabric.Canvas('myCanvas');
+  canvas.setWidth(wrap.clientWidth); //设置画布宽度
+  canvas.setHeight(wrap.clientHeight);
+  canvas.freeDrawingBrush.color = 'red'
+  /*fabric.Object.prototype.selectable = false
+  fabric.Object.prototype.selection = false*/
+
+  var drawType = ""
+
+  var drawObj = null
+
+  var flagPC = IsPC()
+
+  var startPoint = null
+
+  var isDraw = false
+  function draw(type) {
+    drawType = type
+
+    if(type === 'path'){
+      canvas.isDrawingMode = true
+    }else {
+      canvas.isDrawingMode = false
+    }
+
+    if(drawObj && drawObj.type === 'textbox'){
+      drawObj.exitEditing();
+      drawObj = null
+    }
+    fabric.Object.prototype.selectable = false
+    fabric.Object.prototype.selection = false
+  }
+  function select() {
+    //console.log(drawObj.type)
+    drawType = ""
+    if(drawObj && drawObj.type === 'textbox'){
+      drawObj.exitEditing();
+      drawObj = null
+    }
+    canvas.isDrawingMode = false
+    fabric.Object.prototype.selectable = true
+    fabric.Object.prototype.selection = true
+  }
+
+  canvas.on({
+    'mouse:down': function (e) {
+      console.log(drawType,canvas)
+      if(drawType){
+        /*canvas.selectable = false
+        canvas.selection = false*/
+        isDraw = true
+      }else {
+        /*canvas.selectable = true
+        canvas.selection = true*/
+        isDraw = false
+      }
+      var event = null
+      if(flagPC){
+        event = {
+          x: e.e.clientX,
+          y: e.e.clientY
+        }
+      }else {
+        if(e.e.changedTouches){
+          event = {
+            x: e.e.changedTouches[0].clientX,
+            y: e.e.changedTouches[0].clientY,
+          }
+        }
+
+      }
+      if(!event){
+        return
+      }
+      if(drawType === 'text'){
+        if(e.target){
+          return
+        }
+        if(drawObj && drawObj.type === 'textbox'){
+          drawObj.exitEditing();
+          drawObj = null
+        }else {
+          drawObj  = new fabric.Textbox("", {
+            left: event.x,
+            top: event.y,
+            width: 150,
+            fontSize: 20,
+            borderColor: "#2c2c2c",
+            fill: 'red',
+            hasControls: false
+
+          });
+          canvas.add(drawObj)
+          drawObj.enterEditing();
+          drawObj.hiddenTextarea.focus();
+        }
+
+      }else if(drawType === 'rect'){
+        startPoint = {
+          x: event.x,
+          y: event.y
+        }
+        drawObj = null
+      }
+    },
+    'mouse:move': function(e) {
+      if(!isDraw){
+        return
+      }
+      var event = null
+      if(flagPC){
+        event = {
+          x: e.e.clientX,
+          y: e.e.clientY
+        }
+      }else {
+        if(e.e.changedTouches){
+          event = {
+            x: e.e.changedTouches[0].clientX,
+            y: e.e.changedTouches[0].clientY,
+          }
+        }
+      }
+      if(!event){
+        return
+      }
+      if(drawType === 'rect'){
+        if(drawObj){
+          canvas.remove(drawObj)
+        }
+        drawObj  = new fabric.Rect({
+          left: startPoint.x,
+          top: startPoint.y,
+          stroke:'red',
+          fill: 'transparent',
+          hasControls: true,
+          width: event.x - startPoint.x,
+          height: event.y - startPoint.y
+
+        });
+        canvas.add(drawObj)
+      }
+
+    },
+    'mouse:up': function (e) {
+      isDraw = false
+    }
+
+  });
+
+  function Add() {
+    var rect = new fabric.Rect({
+      left: 100,
+      top: 50,
+      fill: 'transparent',
+      width: 200,
+      height: 100,
+      objectCaching: false,
+      stroke: 'red',
+      hasRotatingPoint: true,
+
+    });
+    canvas.renderAll();
+
+    canvas.add(rect);
+    //canvas.setActiveObject(rect);
+
+  }
+
+
+  function IsPC() {
+    var userAgentInfo = navigator.userAgent;
+    var Agents = ["Android", "iPhone",
+      "SymbianOS", "Windows Phone",
+      "iPad", "iPod"];
+    var flag = true;
+    for (var v = 0; v < Agents.length; v++) {
+      if (userAgentInfo.indexOf(Agents[v]) > 0) {
+        flag = false;
+        break;
+      }
+    }
+    return flag;
+  }
+
+
+
+</script>
+</body>
+</html>
